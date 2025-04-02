@@ -15,9 +15,8 @@ def remove_border(color_img: np.ndarray, image: np.ndarray) -> np.ndarray:
 
     return cv2.bitwise_and(image, mask)
 
-
 # Load the image
-img = cv2.imread("healthy/01_h.jpg")
+img = cv2.imread("healthy/05_h.jpg")
 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
 RESULTS = []
@@ -86,7 +85,7 @@ img_frangi = np.where(img_frangi > 0, 1, 0)
 
 ax10 = fig3.add_subplot(1, 2, 1)
 ax10.set_title('Expert mask')
-ax10.imshow(cv2.imread('healthy_manualsegm/01_h.tif'), cmap='gray')
+ax10.imshow(cv2.imread('healthy_manualsegm/05_h.tif'), cmap='gray')
 
 ax11 = fig3.add_subplot(1, 2, 2)
 ax11.set_title('Frangi filter ')
@@ -135,6 +134,7 @@ fig5.tight_layout()
 fig6 = plt.figure(figsize=(15, 5))
 fig6.suptitle('Normalization After Background Removal')
 
+#Limit pixel values to 0-20
 img_normalized_clip = np.clip(img_no_background_blur, 0, 20)
 img_normalized = (img_normalized_clip / img_normalized_clip.max()) * 255
 img_clahe = clahe.apply(img_no_background_blur)
@@ -161,7 +161,7 @@ fig7.suptitle('Expert vs Generated Comparison')
 img_gen = img_normalized.copy()
 img_gen_norm = img_gen / img_gen.max()
 img_gen_binary = np.where(img_gen_norm > 0.75, 1, 0).astype(np.uint8) * 255
-img_expert = cv2.cvtColor(cv2.imread('healthy_manualsegm/01_h.tif'), cv2.COLOR_BGR2GRAY)
+img_expert = cv2.cvtColor(cv2.imread('healthy_manualsegm/05_h.tif'), cv2.COLOR_BGR2GRAY)
 
 ax20 = fig7.add_subplot(1, 3, 1)
 ax20.set_title('Expert Mask')
@@ -177,7 +177,7 @@ RESULTS.append(img_normalized)
 RESULTS.append(img_clahe)
 
 # Results evaluation - each method gets its own figure
-img_true = cv2.imread('healthy_manualsegm/01_h.tif')
+img_true = cv2.imread('healthy_manualsegm/05_h.tif')
 img_true_greyscale = cv2.cvtColor(img_true, cv2.COLOR_BGR2GRAY)
 
 y_true = img_true_greyscale.ravel()
@@ -188,7 +188,7 @@ headers = ["Method", "Accuracy", "Sensitivity", "Specificity", "Balanced Accurac
 data = []
 
 # Create separate figures for each result
-method_names = ['Frangi', 'Background removal + rescaling', 'Background removal + CLAHE']
+method_names = ['Frangi', 'Normalized']
 
 for idx, (img_pred, method_name) in enumerate(zip(RESULTS, method_names)):
     fig_result = plt.figure(figsize=(12, 6))
@@ -209,7 +209,7 @@ for idx, (img_pred, method_name) in enumerate(zip(RESULTS, method_names)):
 
     ax_cm = fig_result.add_subplot(1, 2, 2)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-    disp.plot(ax=ax_cm)
+    disp.plot(ax=ax_cm, cmap='Reds', colorbar=True)
     ax_cm.set_title(f"Confusion Matrix")
 
     # Calculate all metrics correctly
