@@ -11,68 +11,66 @@ from sklearn.metrics import confusion_matrix, accuracy_score, recall_score, Conf
 from tabulate import tabulate
 import joblib
 
-def extract_features(crop):
-    features = []
+def statistics_extraction(crop):
+    feat = []
 
     # Basic statistics
     var = np.var(crop)
-    features.append(var)
-
+    feat.append(var)
     mean = np.mean(crop)
-    features.append(mean)
-
+    feat.append(mean)
     std = np.std(crop)
-    features.append(std)
+    feat.append(std)
 
     # Min and max values
     min_val = np.min(crop)
     max_val = np.max(crop)
-    features.append(min_val)
-    features.append(max_val)
+    feat.append(min_val)
+    feat.append(max_val)
 
     # Range
-    features.append(max_val - min_val)
+    feat.append(max_val - min_val)
 
     # Moments
     moments = cv2.moments(crop)
     hu = cv2.HuMoments(moments).flatten()
-    features.extend(hu)
+    feat.extend(hu)
 
     # Add central moments
-    features.append(moments['mu20'])
-    features.append(moments['mu11'])
-    features.append(moments['mu02'])
-    features.append(moments['mu30'])
-    features.append(moments['mu21'])
-    features.append(moments['mu12'])
-    features.append(moments['mu03'])
+    feat.append(moments['mu20'])
+    feat.append(moments['mu11'])
+    feat.append(moments['mu02'])
+    feat.append(moments['mu30'])
+    feat.append(moments['mu21'])
+    feat.append(moments['mu12'])
+    feat.append(moments['mu03'])
 
-    return np.array(features, dtype=np.float32)
+    return np.array(feat, dtype=np.float32)
 
 
-def extract_label(crop):
-    # Get the center pixel value (for 5x5 crop, center is at [2,2])
-    if crop[2, 2] > 128:  # Threshold for binary decision
+def clip_extraction(clip):
+    # Get the center pixel value (for 5x5 clip, center is at [2,2])
+    if clip[2, 2] > 128:  # Threshold for binary decision
         return np.float32(1)  # Vessel
     else:
         return np.float32(0)  # Background
 
 
-def create_circular_mask(h, w):
-    center = (int(w / 2), int(h / 2))
-    radius = min(center[0], center[1], w - center[0], h - center[1])
+def build_rounded_mask(height, width):
+    center = (int(width / 2), int(height / 2))
+    radius = min(center[0], center[1], width - center[0], height - center[1])
 
-    Y, X = np.ogrid[:h, :w]
+    Y, X = np.ogrid[:height, :width]
     dist_from_center = np.sqrt((X - center[0]) ** 2 + (Y - center[1]) ** 2)
 
     mask = dist_from_center <= radius
     return mask
 
 
-def process_within_circle(h, w, circular_mask, data, process_function, output_list):
-    for y in range(2, h - 2):
-        for x in range(2, w - 2):
-            if circular_mask[y, x]:
+def handle_inside_circle(height, width, rounded_mask, data, process_function, output_list):
+    for y in range(2, height - 2):
+        for x in range(2, width - 2):
+            if rounded_mask[y, x]:
                 crop = data[y - 2:y + 3, x - 2:x + 3]
                 output_list.append(process_function(crop))
 
@@ -103,6 +101,7 @@ if os.path.exists(MODEL_PATH):
     print(f"Loading existing model from {MODEL_PATH}")
     best_model = joblib.load(MODEL_PATH)
 else:
+    #------------------------------------------------------ Training model -----------------------------------------------------------------
     print("Training new model...")
     # Load first 10 images for training
     train_images, train_masks = load_images(1, 10)
@@ -115,11 +114,11 @@ else:
 
     # Extract labels from training masks
     for mask in train_masks:
-        h, w = mask.shape
-        circular_mask = create_circular_mask(h, w)
-        process_within_circle(h, w, circular_mask, mask, extract_label, y)
+        height, width = mask.shape
+        rounded_mask = build_rounded_mask(height, width)
+        handle_inside_circle(height, width, rounded_mask, mask, clip_extraction, y)
 
-    # Extract features from training images
+    # Extract feat from training images
     for image in train_images:
         # Use green channel and apply preprocessing
         image_green = image[:, :, 1]
@@ -127,9 +126,9 @@ else:
         image_green = cv2.GaussianBlur(image_green, (5, 5), 0)
         image_green = clahe.apply(image_green)
 
-        h, w = image_green.shape
-        circular_mask = create_circular_mask(h, w)
-        process_within_circle(h, w, circular_mask, image_green, extract_features, X)
+        height, width = image_green.shape
+        rounded_mask = build_rounded_mask(height, width)
+        handle_inside_circle(height, width, rounded_mask, image_green, statistics_extraction, X)
 
     # Get feature dimension
     f = len(X[0])
@@ -165,10 +164,10 @@ else:
 
     # Define parameter grid for search
     param_grid = {
-        'rfc__n_estimators': [10, 100],
-        'rfc__max_depth': [None, 20],
-        'rfc__min_samples_leaf': [1, 2],
-        'rfc__min_samples_split': [2, 5]
+        'rfc__n_estimators': [10, 110],
+        'rfc__max_depth': [None, 30],
+        'rfc__min_samples_leaf': [1, 3],
+        'rfc__min_samples_split': [2, 6]
     }
 
     # Perform grid search to find optimal parameters
@@ -185,6 +184,7 @@ else:
     best_model = grid_search.best_estimator_
     joblib.dump(best_model, MODEL_PATH)
     print(f"Model saved to {MODEL_PATH}")
+#--------------------------------------------------------------------------------------------------------------------------------------
 
 # Now use the model on images 11-15
 test_images, test_masks = load_images(11, 15)
@@ -215,14 +215,14 @@ for k, new_img, mask in zip(range(n), test_images, test_masks):
     new_img_green = cv2.GaussianBlur(new_img_green, (5, 5), 0)
     new_img_green = clahe.apply(new_img_green)
 
-    # Extract features for each pixel
-    f = len(extract_features(new_img_green[2:7, 2:7]))  # Get feature dimension
+    # Extract feat for each pixel
+    f = len(statistics_extraction(new_img_green[2:7, 2:7]))  # Get feature dimension
     new_img_features = np.zeros((new_img_green.shape[0], new_img_green.shape[1], f), dtype=np.float32)
 
     for i in range(2, new_img_green.shape[0] - 2):
         for j in range(2, new_img_green.shape[1] - 2):
             window = new_img_green[i - 2:i + 3, j - 2:j + 3]
-            new_img_features[i, j] = extract_features(window)
+            new_img_features[i, j] = statistics_extraction(window)
 
     # Predict using trained model
     y_pred = best_model.predict(new_img_features.reshape(-1, f)).reshape(new_img_green.shape[0],

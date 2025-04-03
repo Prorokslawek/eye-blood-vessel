@@ -7,7 +7,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, r
 from tabulate import tabulate
 
 
-def remove_border(color_img: np.ndarray, image: np.ndarray) -> np.ndarray:
+def remove_image_border(color_img: np.ndarray, image: np.ndarray) -> np.ndarray:
     hsv = cv2.cvtColor(color_img, cv2.COLOR_BGR2HSV)
     lower = np.array([0, 0, 80])
     upper = np.array([255, 255, 255])
@@ -26,26 +26,26 @@ fig1 = plt.figure(figsize=(15, 8))
 fig1.suptitle('Original Image and Channel Visualizations')
 
 # Original image
-ax1 = fig1.add_subplot(2, 3, 1)
-ax1.set_title('Original image')
-ax1.imshow(img)
+axis1 = fig1.add_subplot(2, 3, 1)
+axis1.set_title('Original image')
+axis1.imshow(img)
 
 # Channel visualizations
-ax2 = fig1.add_subplot(2, 3, 2)
-ax2.set_title('Red channel')
-ax2.imshow(img[:, :, 0], cmap='gray')
+axis2 = fig1.add_subplot(2, 3, 2)
+axis2.set_title('Red channel')
+axis2.imshow(img[:, :, 0], cmap='gray')
 
-ax3 = fig1.add_subplot(2, 3, 3)
-ax3.set_title('Green channel')
-ax3.imshow(img[:, :, 1], cmap='gray')
+axis3 = fig1.add_subplot(2, 3, 3)
+axis3.set_title('Green channel')
+axis3.imshow(img[:, :, 1], cmap='gray')
 
-ax4 = fig1.add_subplot(2, 3, 4)
-ax4.set_title('Blue channel')
-ax4.imshow(img[:, :, 2], cmap='gray')
+axis4 = fig1.add_subplot(2, 3, 4)
+axis4.set_title('Blue channel')
+axis4.imshow(img[:, :, 2], cmap='gray')
 
-ax5 = fig1.add_subplot(2, 3, 5)
-ax5.set_title('Gray channel')
-ax5.imshow(cv2.cvtColor(img, cv2.COLOR_RGB2GRAY), cmap='gray')
+axis5 = fig1.add_subplot(2, 3, 5)
+axis5.set_title('Gray channel')
+axis5.imshow(cv2.cvtColor(img, cv2.COLOR_RGB2GRAY), cmap='gray')
 
 fig1.tight_layout()
 
@@ -59,13 +59,13 @@ img_gray_norm = clahe.apply(img_gray)
 fig2 = plt.figure(figsize=(10, 5))
 fig2.suptitle('CLAHE Normalization')
 
-ax6 = fig2.add_subplot(1, 2, 1)
-ax6.set_title('Original grayscale')
-ax6.imshow(img_gray, cmap='gray')
+axis6 = fig2.add_subplot(1, 2, 1)
+axis6.set_title('Original grayscale')
+axis6.imshow(img_gray, cmap='gray')
 
-ax7 = fig2.add_subplot(1, 2, 2)
-ax7.set_title('CLAHE normalized')
-ax7.imshow(img_gray_norm, cmap='gray')
+axis7 = fig2.add_subplot(1, 2, 2)
+axis7.set_title('CLAHE normalized')
+axis7.imshow(img_gray_norm, cmap='gray')
 
 fig2.tight_layout()
 
@@ -79,17 +79,17 @@ img_frangi = np.where(img_frangi > 0.065, 1, 0)
 
 # Apply border removal to Frangi filtered image
 img_frangi_uint8 = (img_frangi * 255).astype(np.uint8)
-img_frangi = remove_border(img, img_frangi_uint8)
+img_frangi = remove_image_border(img, img_frangi_uint8)
 # Convert back to binary
 img_frangi = np.where(img_frangi > 0, 1, 0)
 
-ax10 = fig3.add_subplot(1, 2, 1)
-ax10.set_title('Expert mask')
-ax10.imshow(cv2.imread('healthy_manualsegm/05_h.tif'), cmap='gray')
+axis10 = fig3.add_subplot(1, 2, 1)
+axis10.set_title('Expert mask')
+axis10.imshow(cv2.imread('healthy_manualsegm/05_h.tif'), cmap='gray')
 
-ax11 = fig3.add_subplot(1, 2, 2)
-ax11.set_title('Frangi filter ')
-ax11.imshow(img_frangi, cmap='gray')
+axis11 = fig3.add_subplot(1, 2, 2)
+axis11.set_title('Frangi filter ')
+axis11.imshow(img_frangi, cmap='gray')
 
 fig3.tight_layout()
 RESULTS.append(img_frangi)
@@ -116,17 +116,17 @@ background = images[-1]
 img_no_background = cv2.subtract(background, img_gray)
 img_no_background_blur = cv2.GaussianBlur(img_no_background, (5, 5), 0)
 
-ax14 = fig5.add_subplot(1, 3, 1)
-ax14.set_title('Original for bg removal')
-ax14.imshow(img_gray, cmap='gray')
+axis14 = fig5.add_subplot(1, 3, 1)
+axis14.set_title('Original for bg removal')
+axis14.imshow(img_gray, cmap='gray')
 
-ax15 = fig5.add_subplot(1, 3, 2)
-ax15.set_title('Without background')
-ax15.imshow(img_no_background, cmap='gray')
+axis15 = fig5.add_subplot(1, 3, 2)
+axis15.set_title('Without background')
+axis15.imshow(img_no_background, cmap='gray')
 
-ax16 = fig5.add_subplot(1, 3, 3)
-ax16.set_title('Without bg + blur')
-ax16.imshow(img_no_background_blur, cmap='gray')
+axis16 = fig5.add_subplot(1, 3, 3)
+axis16.set_title('Without bg + blur')
+axis16.imshow(img_no_background_blur, cmap='gray')
 
 fig5.tight_layout()
 
@@ -139,17 +139,17 @@ img_normalized_clip = np.clip(img_no_background_blur, 0, 20)
 img_normalized = (img_normalized_clip / img_normalized_clip.max()) * 255
 img_clahe = clahe.apply(img_no_background_blur)
 
-ax17 = fig6.add_subplot(1, 3, 1)
-ax17.set_title('After bg removal')
-ax17.imshow(img_no_background_blur, cmap='gray')
+axis17 = fig6.add_subplot(1, 3, 1)
+axis17.set_title('After bg removal')
+axis17.imshow(img_no_background_blur, cmap='gray')
 
-ax18 = fig6.add_subplot(1, 3, 2)
-ax18.set_title('Normalized image')
-ax18.imshow(img_normalized, cmap='gray')
+axis18 = fig6.add_subplot(1, 3, 2)
+axis18.set_title('Normalized image')
+axis18.imshow(img_normalized, cmap='gray')
 
-ax19 = fig6.add_subplot(1, 3, 3)
-ax19.set_title('CLAHE after bg removal')
-ax19.imshow(img_clahe, cmap='gray')
+axis19 = fig6.add_subplot(1, 3, 3)
+axis19.set_title('CLAHE after bg removal')
+axis19.imshow(img_clahe, cmap='gray')
 
 fig6.tight_layout()
 
@@ -163,13 +163,13 @@ img_gen_norm = img_gen / img_gen.max()
 img_gen_binary = np.where(img_gen_norm > 0.75, 1, 0).astype(np.uint8) * 255
 img_expert = cv2.cvtColor(cv2.imread('healthy_manualsegm/05_h.tif'), cv2.COLOR_BGR2GRAY)
 
-ax20 = fig7.add_subplot(1, 3, 1)
-ax20.set_title('Expert Mask')
-ax20.imshow(img_expert, cmap='gray')
+axis20 = fig7.add_subplot(1, 3, 1)
+axis20.set_title('Expert Mask')
+axis20.imshow(img_expert, cmap='gray')
 
-ax21 = fig7.add_subplot(1, 3, 2)
-ax21.set_title('Normalized')
-ax21.imshow(img_normalized, cmap='gray')
+axis21 = fig7.add_subplot(1, 3, 2)
+axis21.set_title('Normalized')
+axis21.imshow(img_normalized, cmap='gray')
 
 fig7.tight_layout()
 
